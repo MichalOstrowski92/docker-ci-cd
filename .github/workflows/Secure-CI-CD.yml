@@ -1,14 +1,13 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI
+name: Secure-CI
 
 # Controls when the action will run. Triggers the workflow on push or pull request
 # events but only for the master branch
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
+  workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
@@ -35,11 +34,32 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-    - name: Build and push Docker images
+    - 
+      name: Build docker image
       uses: docker/build-push-action@v2
       with:
-          # Set build context as current (root) directory test
+          # Set build context as current (root) directory
+          context: .
+          load: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/aspnetcore-example:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/aspnetcore-example:${{ github.sha }}
+    - 
+      name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/aspnetcore-example:latest
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+    -
+      name: Push docker images
+      uses: docker/build-push-action@v2
+      with:
+          # Set build context as current (root) directory
+          context: .
           push: true
           tags: |
-            michalostrowski92/aspnetcore-example:latest
-            michalostrowski92/aspnetcore-example:${{ github.sha }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/aspnetcore-example:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/aspnetcore-example:${{ github.sha }}
