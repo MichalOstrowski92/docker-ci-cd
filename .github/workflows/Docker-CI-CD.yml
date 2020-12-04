@@ -38,7 +38,7 @@ jobs:
     - name: Build and push Docker images
       uses: docker/build-push-action@v2
       with:
-          # Set build context as current (root) directory
+          # Set build context as current (root) directory test
           context: .
           push: true
           tags: |
